@@ -1,19 +1,26 @@
+import networkx as nx
+import matplotlib.pyplot as plt
 from Models.DeBruijn.Node import Node
+import numpy as np
+import math
 
 class Graph:
+
     def __init__(self, data, data_length=200, kmer_size=4, head=None, tail=None):
-        self.data_length = data_length
+        self.build_visited = {}
+        self.g_vis = nx.DiGraph()
         self.graph = {}
         self.vertexes = {}
+        self.is_2_way = False
+        self.phase = 'build'
+        
+        self.data_length = data_length
         self.head = head
         self.tail = tail
-        self.phase = 'build'
         self.datas = data
-        self.is_2_way = False
         self.kmer_size = kmer_size
         # assert data_length % kmer_size == 0, f'data_length={data_length} is not divisible by kmer_size={kmer_size}'
         self.v_num = data_length//kmer_size
-        self.build_visited = {}
 
     def set_phase(self, phase='traversal'):
         self.phase = phase
@@ -34,6 +41,26 @@ class Graph:
         else:
             self.build_visited[i] = key
 
+    def _update_edge_weight(self, src, dst):
+        self.vertexes[src].edge_out()
+        self.vertexes[dst].edge_in()
+        self.g_vis.add_edge(src, dst, weight=self.vertexes[dst].w_in)
+
+    def _add_new_vertex(self, src, dst, dst_node):
+        self.graph.update({src: dst_node})
+
+        if not src in self.vertexes:
+            src_node = Node(src)
+            self.vertexes.update({src: src_node})
+        else:
+            src_node = self.vertexes[src]
+
+        if not dst in self.vertexes:
+            dst_node = Node(dst)
+            self.vertexes.update({dst: dst_node})
+        else:
+            dst_node = self.vertexes[dst]
+
     def add_edge(self, src, dst, key=0):
         dst_node = Node(dst)
 
@@ -44,26 +71,10 @@ class Graph:
                 self.graph[src] = dst_node
             if not dst in self.vertexes:
                 self.vertexes.update({dst: dst_node})
-            self.vertexes[src].edge_out()
-            self.vertexes[dst].edge_in()
         else:
-            self.graph.update({src: dst_node})
+            self._add_new_vertex(src, dst, dst_node)
 
-            if not src in self.vertexes:
-                src_node = Node(src)
-                self.vertexes.update({src: src_node})
-            else:
-                src_node = self.vertexes[src]
-
-            if not dst in self.vertexes:
-                dst_node = Node(dst)
-                self.vertexes.update({dst: dst_node})
-            else:
-                dst_node = self.vertexes[dst]
-
-            self.vertexes[src].edge_out()
-            self.vertexes[dst].edge_in()
-
+        self._update_edge_weight(src, dst)
         self.b_visit(src, dst, key)
 
     def build(self):
@@ -82,12 +93,38 @@ class Graph:
             if kmer in self.graph:
                 node = self.graph[kmer]
             else:
-                tmp = node
                 node = Node(None)
-                node.w_in
             s += "Vertex " + str(kmer) + " - " + \
                 str(self.vertexes[kmer].weight(
                 )) + f"({self.vertexes[kmer].w_in}, {self.vertexes[kmer].w_out})" + ": "
             s += str(node)
             s += " \n"
         return s
+
+    def draw_de_bruijn_graph(self, weight_on=False, thickness=True, minimize_edge=False, font_color='k', node_size=800, weight_scale=1, font_size=6):
+        g = self.g_vis
+        weights = None
+        if thickness:
+            edges = g.edges()
+            weights = [g[u][v]['weight'] for u,v in edges]
+            weights = np.array(weights)
+            if minimize_edge:
+                weights = weights / np.average(weights)
+
+        plt.figure(figsize=(15,15), dpi=80)
+        #555555
+        #9ED0FD - light blue
+        
+        nx.draw_networkx(
+            g, pos=nx.kamada_kawai_layout(g),
+            node_shape='o', node_size=node_size, font_size=font_size,
+            edge_color='#555555', width=weights*weight_scale, font_color=font_color
+        )
+        if weight_on:
+            nx.draw_networkx_edge_labels(
+                g, pos=nx.kamada_kawai_layout(g), 
+                edge_labels=nx.get_edge_attributes(g, 'weight'),
+                font_size=font_size+2, label_pos=0.5, rotate=False,
+            )
+        plt.axis('off')
+        plt.show() 
