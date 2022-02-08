@@ -5,6 +5,7 @@ class Node:
         self.w_out = 0
         self.next = None
         self.visited = {}
+        self.visit= False
 
     def next(self, node):
         self.next = node

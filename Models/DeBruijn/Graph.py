@@ -6,9 +6,10 @@ import math
 
 class Graph:
 
-    def __init__(self, data, data_length=200, kmer_size=4, head=None, tail=None):
+    def __init__(self, data, data_length=200, kmer_size=4, head=None, tail=None, prune=0):
         self.build_visited = {}
         self.g_vis = nx.DiGraph()
+        self.g_vis_pruned = nx.DiGraph()
         self.graph = {}
         self.vertexes = {}
         self.is_2_way = False
@@ -20,7 +21,8 @@ class Graph:
         self.datas = data
         self.kmer_size = kmer_size
         # assert data_length % kmer_size == 0, f'data_length={data_length} is not divisible by kmer_size={kmer_size}'
-        self.v_num = data_length//kmer_size
+        self.v_num = data_length - kmer_size + 1
+        self.prune = prune
 
     def set_phase(self, phase='traversal'):
         self.phase = phase
@@ -45,6 +47,8 @@ class Graph:
         self.vertexes[src].edge_out()
         self.vertexes[dst].edge_in()
         self.g_vis.add_edge(src, dst, weight=self.vertexes[dst].w_in)
+        if self.vertexes[dst].weight() > self.prune:
+            self.g_vis_pruned.add_edge(src, dst, weight=self.vertexes[dst].w_in)
 
     def _add_new_vertex(self, src, dst, dst_node):
         self.graph.update({src: dst_node})
@@ -87,6 +91,24 @@ class Graph:
             key += 1
         self.build_visited = {}
 
+    def get_next_vertex(self, v):
+        if type(v) is str:
+            if v in self.graph:
+                return self.graph[v]
+            return None
+        if v.vertex in self.graph:
+            return self.graph[v.vertex]
+        return None
+    
+    def get_vertex_with_weight(self, v):
+        if type(v) is str:
+            if v in self.vertexes:
+                return self.vertexes[v]
+            return None
+        if v.vertex in self.vertexes:
+            return self.vertexes[v.vertex]
+        return None
+
     def __repr__(self):
         s = ""
         for kmer, node in self.vertexes.items():
@@ -101,8 +123,10 @@ class Graph:
             s += " \n"
         return s
 
-    def draw_de_bruijn_graph(self, weight_on=False, thickness=True, minimize_edge=False, font_color='k', node_size=800, weight_scale=1, font_size=6):
+    def draw_de_bruijn_graph(self, weight_on=False, thickness=True, minimize_edge=False, font_color='k', node_size=800, weight_scale=1, font_size=6, pruned=False):
         g = self.g_vis
+        if pruned:
+            g = self.g_vis_pruned
         weights = None
         if thickness:
             edges = g.edges()

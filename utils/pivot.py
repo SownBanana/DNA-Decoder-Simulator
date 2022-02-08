@@ -1,0 +1,2 @@
+start = 'TTG'
+stop = 'TAA'
