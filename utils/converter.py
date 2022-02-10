@@ -42,6 +42,12 @@ c2n_dict = {
     " " : "AGC",
     "," : "CCG",
     "."	: "ACG",
+    '"' : "TTA",
+    '-' : "AAG",
+    ":" : "GGA",
+    "!" : "AAT",
+    "?" : "AAC",
+    ";" : "CCA",
 }
 
 n2c_dict = {
@@ -86,6 +92,12 @@ n2c_dict = {
     "AGC": " ",
     "CCG": ",",
     "ACG": ".",
+    "TTA": '"',
+    "AAG": '-',
+    "GGA": ':',
+    "AAT": '!',
+    "AAC": '?',
+    "CCA": ';',
 }
 
 n2b_dict = {
@@ -130,11 +142,18 @@ n2b_dict = {
     "AGC": "100111",
     "CCG": "101000",
     "ACG": "101001",
+    "TTA": "101010",
+    "AAG": "101011",
+    "GGA": "101100",
+    "AAT": "101101",
+    "AAC": "101110",
+    "CCA": "101111",
 }
 
 def str2ncs(st):
     ncs = ""
     for c in st.upper():
+        assert c in c2n_dict, c +' not have nucleotide encode'
         if c in c2n_dict:
                 ncs += c2n_dict[c]
         else:

@@ -16,6 +16,7 @@ def errors_add(data, percent_error, k=30):
     while k > 0:
         d = ""
         for nuc in data:
+            assert nuc in nucleotides, nuc + ' not in ' + str(nucleotides) + ' - ' + data
             if decision(percent_error):
                 d += globals()[decision_error_type()](nuc)
             else:
