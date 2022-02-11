@@ -37,7 +37,7 @@ class DecoderAlgo:
             if vertex.vertex[:kmer_size] == v.vertex[:kmer_size]:
                 return False
             return True
-    
+
     def check_key_visited(self, d, key):
         kmer = self.graph.kmer_size
         for k, v in d.items():
@@ -69,9 +69,9 @@ class BFS(DecoderAlgo):
             v = self.graph.get_next_vertex(end_v)
             c = 1
             while v:
-                if not self.check_key_visited(v.visited, key) \
-                        and self.check_vertex_not_in_adjacent(v.vertex, adj_v) \
-                        and self.graph.get_vertex_with_weight(v).weight() > self.min_weight:
+                if self.graph.get_vertex_with_weight(v).weight() > self.min_weight \
+                    and not self.check_key_visited(v.visited, key) \
+                        and self.check_vertex_not_in_adjacent(v.vertex, adj_v):
                     v.visited.update({key: True})
                     adj_v.append(v.vertex + str(c))
                     c += 1
@@ -91,11 +91,12 @@ class BFS(DecoderAlgo):
                     self.queue.append(p)
         return self.path
 
+
 class Path:
     def __init__(self, vertexes=[], weight=0):
         self.vertexes = vertexes
         self.w = weight
-    
+
     def copy(self):
         cls = self.__class__
         result = cls.__new__(cls)
@@ -111,6 +112,7 @@ class Path:
 
     def avg_weight(self):
         return self.w / len(self.vertexes)
+
 
 class Beam(DecoderAlgo):
     def __init__(self, k, min_weight=0, db=0):
@@ -131,7 +133,8 @@ class Beam(DecoderAlgo):
         next_v.sort(key=sort_func, reverse=True)
 
         for i in range(min(len(next_v), self.k)):
-            self.queue.append(Path([next_v[i].vertex + '1'], next_v[i].weight()))
+            self.queue.append(
+                Path([next_v[i].vertex + '1'], next_v[i].weight()))
 
         dbi = 1
 
@@ -162,7 +165,7 @@ class Beam(DecoderAlgo):
                     p.w += v.weight()
                     temp_queue.append(p)
                     c += 1
-            
+
             self.queue = []
             temp_queue.sort(key=sort_func, reverse=True)
             for i in range(min(len(temp_queue), self.k)):
@@ -187,20 +190,48 @@ class DFS(DecoderAlgo):
 
     def traversal(self, graph):
         self.graph = graph
+        kmer_size = self.graph.kmer_size
         for v_key, v in graph.vertexes.items():
-            if v_key.startswith(pivot.start):
-                self.stack.append(v)
+            if v_key.startswith(pivot.start) and v.weight() > self.min_weight:
+                self.stack.append(Path([v.vertex + '1'], v.weight()))
         self.stack.sort(key=sort_func)
 
-        while self.stack or len(self.path) < self.graph.v_num:
-            v = self.stack.pop()
-            self.path.append(v.vertex)
-            adj_vs = []
-            v = self.graph.get_next_vertex(v)
+        while self.stack:
+            path = self.stack.pop()
+            key = ''.join(path.vertexes)
+            end_v = path.vertexes[-1][:kmer_size]
+            adj_v = []
+            v = self.graph.get_next_vertex(end_v)
             while v:
-                # if v
-                adj_vs.append(self.graph.get_vertex_with_weight(v))
+                vw = self.graph.get_vertex_with_weight(v)
+                if self.graph.get_vertex_with_weight(v).weight() > self.min_weight \
+                    and not self.check_key_visited(v.visited, key) \
+                    and self.check_vertex_not_in_adjacent(v, adj_v):
+                    v.visited.update({key: True})
+                    adj_v.append(self.graph.get_vertex_with_weight(v))
                 v = v.next
-            adj_vs.sort(key=sort_func)
-            self.stack.extend(adj_vs)
-            print(len(self.path), self.path)
+
+            adj_v.sort(key=sort_func)
+
+            c = 1
+            for v in adj_v:
+                p = path.copy()
+                p.vertexes[-1] = p.vertexes[-1][:kmer_size] + str(c)
+                p.vertexes.append(v.vertex + str(c))
+                p.w += v.weight()
+
+                if len(p.vertexes) == self.graph.v_num:
+                    if v.vertex.endswith(pivot.stop):
+                        pnn = ''
+                        for i in range(len(p.vertexes) - 1):
+                            pnn += p.vertexes[i][0]
+                        pnn += v.vertex
+                        self.path.append(pnn)
+                        if pnn == self.graph.origin:
+                            return self.path
+                else:
+                    self.stack.append(p)
+
+                c += 1
+
+        return self.path

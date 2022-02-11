@@ -10,6 +10,7 @@ class Decoder():
         self.data_length = original_length
         self.graph = Graph(data = data, data_length=original_length, kmer_size=kmer_size, prune=self.prune)
         self.graph.build()
+        self.graph.origin = self.origin
         if visualization:
             self.graph.draw_de_bruijn_graph(minimize_edge=self.minimize_edge)
 
