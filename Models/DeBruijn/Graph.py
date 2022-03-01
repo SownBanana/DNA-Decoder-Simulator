@@ -123,7 +123,7 @@ class Graph:
             s += " \n"
         return s
 
-    def draw_de_bruijn_graph(self, weight_on=False, thickness=True, minimize_edge=False, font_color='k', node_size=800, weight_scale=1, font_size=6, pruned=False):
+    def draw_de_bruijn_graph(self, weight_on=False, thickness=True, minimize_edge=False, font_color='k', node_size=800, weight_scale=1, font_size=6, pruned=False,figsize=(15,15)):
         g = self.g_vis
         if pruned:
             g = self.g_vis_pruned
@@ -134,15 +134,16 @@ class Graph:
             weights = np.array(weights)
             if minimize_edge:
                 weights = weights / np.average(weights)
+            weights = weights*weight_scale
 
-        plt.figure(figsize=(15,15), dpi=80)
+        plt.figure(figsize=figsize)
         #555555
         #9ED0FD - light blue
         
         nx.draw_networkx(
             g, pos=nx.kamada_kawai_layout(g),
             node_shape='o', node_size=node_size, font_size=font_size,
-            edge_color='#555555', width=weights*weight_scale, font_color=font_color
+            edge_color='#555555', width=weights, font_color=font_color
         )
         if weight_on:
             nx.draw_networkx_edge_labels(

@@ -203,7 +203,7 @@ class DFS(DecoderAlgo):
             adj_v = []
             v = self.graph.get_next_vertex(end_v)
             while v:
-                vw = self.graph.get_vertex_with_weight(v)
+                # vw = self.graph.get_vertex_with_weight(v)
                 if self.graph.get_vertex_with_weight(v).weight() > self.min_weight \
                     and not self.check_key_visited(v.visited, key) \
                     and self.check_vertex_not_in_adjacent(v, adj_v):
